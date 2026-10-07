@@ -1,0 +1,61 @@
+/* ==========================================
+   FITMAN AI - MAIN STYLES
+   ========================================== */
+
+.main {
+    padding-top: 2rem;
+}
+
+/* Main title */
+
+.fitman-title {
+    font-size: 42px;
+    font-weight: 800;
+    margin-bottom: 5px;
+}
+
+.fitman-subtitle {
+    font-size: 18px;
+    opacity: 0.75;
+    margin-bottom: 30px;
+}
+
+/* Dashboard cards */
+
+.dashboard-card {
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    margin-bottom: 15px;
+}
+
+.dashboard-card h3 {
+    margin-bottom: 5px;
+}
+
+.dashboard-card p {
+    font-size: 16px;
+}
+
+/* Section headers */
+
+.section-title {
+    font-size: 25px;
+    font-weight: 700;
+    margin-top: 20px;
+    margin-bottom: 15px;
+}
+
+/* Buttons */
+
+.stButton > button {
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 10px 20px;
+}
+
+/* Sidebar */
+
+[data-testid="stSidebar"] {
+    padding-top: 20px;
+}
