@@ -1,3 +1,5 @@
+from datetime import date
+
 import streamlit as st
 
 
@@ -24,30 +26,11 @@ def show_dashboard():
     plan = st.session_state.plan
 
     # ==================================================
-    # WELCOME HEADER
-    # ==================================================
-
-    st.markdown(
-        f"""
-        <div class="fitman-header">
-            <div class="fitman-title">
-                👋 Welcome, {profile["name"]}
-            </div>
-
-            <div class="fitman-subtitle">
-                Here's your personalized FitMan AI overview.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    # ==================================================
     # DAILY OVERVIEW
     # ==================================================
 
     st.markdown(
-        '<div class="section-title">Your Daily Overview</div>',
+        '<div class="section-title">Your Overview</div>',
         unsafe_allow_html=True
     )
 
@@ -63,19 +46,17 @@ def show_dashboard():
     col1, col2, col3 = st.columns(3)
 
     with col1:
+        today = date.today()
+        water_log = st.session_state.setdefault("water_log", {})
+        water_ml = water_log.get(today, 0)
 
-        st.markdown(
-            """
-            <div class="dashboard-card">
-                <h3>💧 Hydration</h3>
-                <p>
-                    Stay hydrated throughout your day.
-                </p>
-                <h2>0 L</h2>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        st.metric("💧 Water today", f"{water_ml:,} mL")
+        if st.button("Add 250 mL", type="primary"):
+            water_log[today] = water_ml + 250
+            st.rerun()
+        if water_ml and st.button("Undo last glass"):
+            water_log[today] = water_ml - 250
+            st.rerun()
 
     with col2:
 
@@ -99,7 +80,7 @@ def show_dashboard():
             <div class="dashboard-card">
                 <h3>🏃 Activity</h3>
                 <p>
-                    Exercise recorded today.
+                    Exercise logged this session.
                 </p>
                 <h2>{exercise_minutes} min</h2>
             </div>

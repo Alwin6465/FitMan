@@ -3,7 +3,7 @@ import streamlit as st
 
 def show_exercise():
 
-    st.header("🏃 Exercise Tracker")
+    st.title("Exercise Tracker")
 
     st.write(
         "Record your physical activities and keep track of your "
@@ -40,6 +40,7 @@ def show_exercise():
 
     if st.button(
         "➕ Add Exercise",
+        type="primary",
         use_container_width=True
     ):
 

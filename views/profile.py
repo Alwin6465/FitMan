@@ -2,14 +2,14 @@ import streamlit as st
 from planner import create_plan
 
 
+def saved_option(label, options, saved_value):
+    index = options.index(saved_value) if saved_value in options else 0
+    return st.selectbox(label, options, index=index)
+
+
 def show_profile():
 
-    st.header("👤 Your Profile")
-
-    st.write(
-        "Tell FitMan about yourself. Your information will be used "
-        "to create personalized recommendations."
-    )
+    profile = st.session_state.profile
 
     # ==================================================
     # BASIC INFORMATION
@@ -19,37 +19,38 @@ def show_profile():
 
     name = st.text_input(
         "Name",
-        value=st.session_state.profile.get("name", "")
+        value=profile.get("name", "")
     )
 
     age = st.number_input(
         "Age",
         min_value=13,
         max_value=100,
-        value=st.session_state.profile.get("age", 18)
+        value=profile.get("age", 18)
     )
 
     height = st.number_input(
         "Height (cm)",
         min_value=100,
         max_value=250,
-        value=st.session_state.profile.get("height", 170)
+        value=profile.get("height", 170)
     )
 
     weight = st.number_input(
         "Weight (kg)",
         min_value=30,
         max_value=300,
-        value=st.session_state.profile.get("weight", 70)
+        value=profile.get("weight", 70)
     )
 
-    gender = st.selectbox(
+    gender = saved_option(
         "Gender",
         [
             "Male",
             "Female",
             "Other / Prefer not to say"
-        ]
+        ],
+        profile.get("gender")
     )
 
     # ==================================================
@@ -58,68 +59,74 @@ def show_profile():
 
     st.subheader("🏃 Fitness Information")
 
-    activity = st.selectbox(
+    activity = saved_option(
         "Activity Level",
         [
             "Low",
             "Moderate",
             "High"
-        ]
+        ],
+        profile.get("activity")
     )
 
-    experience = st.selectbox(
+    experience = saved_option(
         "Workout Experience",
         [
             "Beginner",
             "Intermediate",
             "Advanced"
-        ]
+        ],
+        profile.get("experience")
     )
 
-    goal = st.selectbox(
+    goal = saved_option(
         "Main Goal",
         [
             "General Wellness",
             "Build Strength",
             "Improve Fitness",
             "Build Healthy Habits"
-        ]
+        ],
+        profile.get("goal")
     )
 
-    workout_location = st.selectbox(
+    workout_location = saved_option(
         "Where do you usually work out?",
         [
             "Gym",
             "Home",
             "Outdoor"
-        ]
+        ],
+        profile.get("workout_location")
     )
 
     workout_time = st.slider(
         "How much time do you have for a workout?",
         min_value=15,
         max_value=180,
-        value=45,
+        value=profile.get("workout_time", 45),
         step=15
     )
 
-    preferred_time = st.selectbox(
+    preferred_time = saved_option(
         "Preferred Workout Time",
         [
             "Morning",
             "Afternoon",
             "Evening"
-        ]
+        ],
+        profile.get("preferred_time")
     )
 
-    plan_days = st.selectbox(
+    plan_days = saved_option(
         "How many days per week would you like a plan for?",
         [
             2,
             3,
             5,
             7
-        ]
+        ],
+        profile.get("plan_days")
     )
 
     # ==================================================
@@ -128,7 +135,7 @@ def show_profile():
 
     st.subheader("🍎 Food & Recovery")
 
-    diet = st.selectbox(
+    diet = saved_option(
         "Diet Preference",
         [
             "No Restrictions",
@@ -136,15 +143,18 @@ def show_profile():
             "Vegan",
             "High Protein",
             "Other"
-        ]
+        ],
+        profile.get("diet")
     )
 
     bedtime = st.time_input(
-        "Usual Bedtime"
+        "Usual Bedtime",
+        value=profile.get("bedtime", "now")
     )
 
     wake_time = st.time_input(
-        "Usual Wake-up Time"
+        "Usual Wake-up Time",
+        value=profile.get("wake_time", "now")
     )
 
     # ==================================================
@@ -153,6 +163,7 @@ def show_profile():
 
     if st.button(
         "🚀 Save Profile",
+        type="primary",
         use_container_width=True
     ):
 

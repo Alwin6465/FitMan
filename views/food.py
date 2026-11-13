@@ -3,7 +3,7 @@ import streamlit as st
 
 def show_food():
 
-    st.header("🍎 Food & Nutrition")
+    st.title("Food & Nutrition")
 
     st.write(
         "Build healthy eating habits with balanced meals and room "
@@ -122,6 +122,7 @@ def show_food():
 
     if st.button(
         "➕ Add Food",
+        type="primary",
         use_container_width=True
     ):
 
