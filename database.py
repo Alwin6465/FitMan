@@ -1,7 +1,9 @@
 import json
 import sqlite3
 from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import time
+from hashlib import sha256
 from pathlib import Path
 
 
@@ -11,6 +13,20 @@ from pathlib import Path
 
 DATA_FOLDER = Path(__file__).resolve().parent / "data"
 DATABASE_FILE = DATA_FOLDER / "fitman.db"
+account_database = ContextVar("account_database", default=None)
+
+
+@contextmanager
+def account_storage(identity):
+    path = None
+    if identity is not None:
+        fingerprint = sha256(json.dumps(identity).encode("utf-8")).hexdigest()
+        path = DATA_FOLDER / "accounts" / f"{fingerprint}.db"
+    token = account_database.set(path)
+    try:
+        yield
+    finally:
+        account_database.reset(token)
 
 
 # ==================================================
@@ -19,10 +35,11 @@ DATABASE_FILE = DATA_FOLDER / "fitman.db"
 
 def get_connection():
 
-    DATA_FOLDER.mkdir(exist_ok=True)
+    path = account_database.get() or DATABASE_FILE
+    path.parent.mkdir(parents=True, exist_ok=True)
 
     connection = sqlite3.connect(
-        DATABASE_FILE,
+        path,
         check_same_thread=False
     )
 
@@ -353,6 +370,10 @@ def initialize_workspace():
                 day TEXT PRIMARY KEY,
                 sets TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS guided_workout_duration (
+                day TEXT PRIMARY KEY,
+                seconds INTEGER NOT NULL CHECK (seconds >= 0)
+            );
             CREATE TABLE IF NOT EXISTS favorite_meals (
                 name TEXT PRIMARY KEY COLLATE NOCASE,
                 quantity INTEGER NOT NULL CHECK (quantity > 0)
@@ -458,7 +479,7 @@ def latest_workout_feedback(before):
     return feedback
 
 
-def save_guided_workout(day, feedback, sets=()):
+def save_guided_workout(day, feedback, sets=(), elapsed_seconds=None):
     with workspace_db() as db:
         db.execute(
             """INSERT INTO guided_workout VALUES (?, ?)
@@ -471,6 +492,11 @@ def save_guided_workout(day, feedback, sets=()):
                    ON CONFLICT(day) DO UPDATE SET sets = excluded.sets""",
                 (day.isoformat(), json.dumps(sets)),
             )
+        if elapsed_seconds is not None:
+            db.execute(
+                "REPLACE INTO guided_workout_duration VALUES (?, ?)",
+                (day.isoformat(), elapsed_seconds),
+            )
         db.execute("INSERT OR IGNORE INTO workout_completion VALUES (?)", (day.isoformat(),))
 
 
@@ -480,3 +506,11 @@ def get_guided_workout_sets(day):
             "SELECT sets FROM guided_workout_sets WHERE day = ?", (day.isoformat(),)
         ).fetchone()
     return json.loads(row["sets"]) if row else []
+
+
+def get_guided_workout_duration(day):
+    with workspace_db() as db:
+        row = db.execute(
+            "SELECT seconds FROM guided_workout_duration WHERE day = ?", (day.isoformat(),)
+        ).fetchone()
+    return row["seconds"] if row else None

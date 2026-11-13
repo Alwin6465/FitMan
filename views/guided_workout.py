@@ -50,6 +50,7 @@ def show_guided_workout(day, exercises, completed):
                 "feedback": {},
                 "index": 0,
                 "sets": [],
+                "started_at": monotonic(),
                 "rest_until": 0,
                 "previous": latest_workout_feedback(day),
             }
@@ -70,7 +71,8 @@ def show_guided_workout(day, exercises, completed):
             else:
                 st.write(f"{len(sets)} sets logged. Finish to save your session.")
                 if st.button("Finish guided workout", type="primary"):
-                    save_guided_workout(day, run["feedback"], sets)
+                    elapsed = round(monotonic() - run["started_at"]) if "started_at" in run else None
+                    save_guided_workout(day, run["feedback"], sets, elapsed)
                     del st.session_state.guided_workout
                     st.session_state.guided_workout_finished = day
                     st.rerun()
@@ -90,6 +92,9 @@ def show_guided_workout(day, exercises, completed):
             with st.form(f"guided_step_{index}_{logged}"):
                 measure = st.selectbox("Track by", ("Reps", "Seconds"))
                 amount = st.number_input("Reps or seconds completed", min_value=1, value=10)
+                weight = st.number_input(
+                    "Weight used (kg, optional)", min_value=0.0, value=None, step=0.5
+                )
                 rating = st.radio(
                     "How did this set feel?",
                     ("Too easy", "About right", "Too hard"),
@@ -104,7 +109,7 @@ def show_guided_workout(day, exercises, completed):
                     else:
                         sets.append({
                             "step": index, "exercise": exercise, "measure": measure,
-                            "amount": amount, "rating": rating,
+                            "amount": amount, "rating": rating, "weight_kg": weight,
                         })
                         run["feedback"][exercise] = rating
                         run["rest_until"] = monotonic() + rest if rest else 0

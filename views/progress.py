@@ -4,7 +4,7 @@ from io import StringIO
 
 import streamlit as st
 
-from database import delete_entry, edit_entry, get_completions, get_entries, get_guided_workout_sets
+from database import delete_entry, edit_entry, get_completions, get_entries, get_guided_workout_duration, get_guided_workout_sets
 from planner import weekly_schedule
 
 
@@ -55,8 +55,12 @@ def show_progress():
     workout_day = st.date_input("Workout date", value=today, max_value=today, key="guided_history_day")
     saved_sets = get_guided_workout_sets(workout_day)
     if saved_sets:
+        duration = get_guided_workout_duration(workout_day)
+        if duration is not None:
+            minutes, seconds = divmod(duration, 60)
+            st.caption(f"Session time (including rest): {minutes} min {seconds} sec")
         st.table([
-            {"Exercise": item["exercise"], "Completed": f"{item['amount']} {item['measure'].lower()}", "Effort": item["rating"]}
+            {"Exercise": item["exercise"], "Completed": f"{item['amount']} {item['measure'].lower()}", "Weight (kg)": item.get("weight_kg"), "Effort": item["rating"]}
             for item in saved_sets
         ])
     else:
