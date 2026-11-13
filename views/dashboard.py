@@ -1,6 +1,10 @@
-from datetime import date
+from datetime import date, timedelta
 
 import streamlit as st
+
+from database import add_entry, get_completions, get_entries, set_completion, undo_water
+from planner import weekly_schedule
+from views.guided_workout import show_guided_workout
 
 
 def show_dashboard():
@@ -34,28 +38,20 @@ def show_dashboard():
         unsafe_allow_html=True
     )
 
-    food_count = len(
-        st.session_state.food_entries
-    )
-
-    exercise_minutes = sum(
-        item["duration"]
-        for item in st.session_state.exercise_entries
-    )
+    today = date.today()
+    entries = get_entries(today, today)
+    food_count = sum(row["kind"] == "food" for row in entries)
+    exercise_minutes = sum(row["amount"] for row in entries if row["kind"] == "exercise")
+    water_ml = sum(row["amount"] for row in entries if row["kind"] == "water")
 
     col1, col2, col3 = st.columns(3)
-
     with col1:
-        today = date.today()
-        water_log = st.session_state.setdefault("water_log", {})
-        water_ml = water_log.get(today, 0)
-
-        st.metric("💧 Water today", f"{water_ml:,} mL")
+        st.metric("Water today", f"{water_ml:,} mL")
         if st.button("Add 250 mL", type="primary"):
-            water_log[today] = water_ml + 250
+            add_entry("water", today, "Water", 250)
             st.rerun()
         if water_ml and st.button("Undo last glass"):
-            water_log[today] = water_ml - 250
+            undo_water(today)
             st.rerun()
 
     with col2:
@@ -80,7 +76,7 @@ def show_dashboard():
             <div class="dashboard-card">
                 <h3>🏃 Activity</h3>
                 <p>
-                    Exercise logged this session.
+                    Exercise logged today.
                 </p>
                 <h2>{exercise_minutes} min</h2>
             </div>
@@ -88,49 +84,35 @@ def show_dashboard():
             unsafe_allow_html=True
         )
 
-    # ==================================================
-    # TODAY'S WORKOUT
-    # ==================================================
+    monday = today - timedelta(days=today.weekday())
+    schedule = weekly_schedule(plan, monday)
+    completed = get_completions(monday, monday + timedelta(days=6))
+    session = schedule[today]
 
-    st.markdown(
-        '<div class="section-title">💪 Today\'s Workout</div>',
-        unsafe_allow_html=True
-    )
+    st.subheader("Today's workout")
+    if session is None:
+        st.info("Rest day")
+    else:
+        st.write(f"{session['location']} · {session['minutes']} minutes · {plan['preferred_time']}")
+        for exercise in session["exercises"]:
+            st.write(f"• {exercise}")
+        done = today.isoformat() in completed
+        if st.button("Undo completion" if done else "Mark workout complete", type="primary"):
+            set_completion(today, not done)
+            st.rerun()
 
-    st.markdown(
-        f"""
-        <div class="dashboard-card">
+    if session is not None:
+        show_guided_workout(today, session["exercises"], done)
 
-            <p>
-                <strong>📍 Location:</strong>
-                {plan["workout_location"]}
-            </p>
-
-            <p>
-                <strong>⏰ Preferred Time:</strong>
-                {plan["preferred_time"]}
-            </p>
-
-            <p>
-                <strong>⏱️ Duration:</strong>
-                {plan["workout_time"]} minutes
-            </p>
-
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    for exercise in plan["workout"]:
-
-        st.markdown(
-            f"""
-            <div class="dashboard-card">
-                <h3>🏋️ {exercise}</h3>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+    with st.expander("Weekly workout calendar", expanded=True):
+        for day, workout in schedule.items():
+            status = "Completed" if day.isoformat() in completed else "Training" if workout else "Rest"
+            label = f"{day:%A, %b %d} · {status}"
+            if workout:
+                label += f" · {workout['minutes']} min · {workout['location']}"
+            st.write(label)
+            if workout:
+                st.caption(" · ".join(workout["exercises"]))
 
     # ==================================================
     # RECOMMENDATIONS

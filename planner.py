@@ -430,3 +430,34 @@ def create_plan(
 
     # THIS FIXES THE ERROR
     return recommendation
+
+def plan_for_profile(profile):
+    inputs = {key: value for key, value in profile.items() if key not in ("name", "height", "weight")}
+    return create_plan(**inputs)
+
+
+def weekly_schedule(plan, start):
+    from datetime import timedelta
+
+    training_days = {
+        2: (0, 3),
+        3: (0, 2, 4),
+        5: (0, 1, 3, 4, 5),
+        7: tuple(range(7)),
+    }[plan["plan_days"]]
+    exercises = plan["workout"]
+    minutes = plan["workout_time"]
+    slots = min(len(exercises), max(2, minutes // 8))
+    schedule = {}
+    for offset in range(7):
+        day = start + timedelta(days=offset)
+        if offset not in training_days:
+            schedule[day] = None
+            continue
+        rotation = training_days.index(offset) % len(exercises)
+        schedule[day] = {
+            "minutes": minutes,
+            "location": plan["workout_location"],
+            "exercises": (exercises[rotation:] + exercises[:rotation])[:slots],
+        }
+    return schedule

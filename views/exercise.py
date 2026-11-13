@@ -1,4 +1,8 @@
+from datetime import date
+
 import streamlit as st
+
+from database import add_entry, get_entries
 
 
 def show_exercise():
@@ -44,59 +48,16 @@ def show_exercise():
         use_container_width=True
     ):
 
-        st.session_state.exercise_entries.append(
-            {
-                "exercise": exercise,
-                "duration": duration
-            }
-        )
-
-        st.success(
-            f"Added {exercise} for {duration} minutes."
-        )
-
-    # ==================================================
-    # TODAY'S EXERCISE
-    # ==================================================
+        add_entry("exercise", date.today(), exercise, duration)
+        st.success(f"Added {exercise} for {duration} minutes.")
 
     st.divider()
-
-    st.subheader("📋 Today's Exercise")
-
-    if len(st.session_state.exercise_entries) == 0:
-
-        st.info(
-            "No exercise entries yet."
-        )
-
+    st.subheader("Today's exercise")
+    today = date.today()
+    entries = [row for row in get_entries(today, today) if row["kind"] == "exercise"]
+    if not entries:
+        st.info("No exercise entries yet.")
     else:
-
-        total_minutes = 0
-
-        for entry in st.session_state.exercise_entries:
-
-            st.markdown(
-                f"""
-                <div class="dashboard-card">
-
-                    <h3>🏃 {entry['exercise']}</h3>
-
-                    <p>
-                        Duration: {entry['duration']} minutes
-                    </p>
-
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-            total_minutes += entry["duration"]
-
-        # ==================================================
-        # TOTAL ACTIVITY
-        # ==================================================
-
-        st.metric(
-            "Total Exercise Today",
-            f"{total_minutes} min"
-        )
+        for row in entries:
+            st.text(f"{row['label']} · {row['amount']} min")
+        st.metric("Total exercise today", f"{sum(row['amount'] for row in entries)} min")

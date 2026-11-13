@@ -1,5 +1,6 @@
 import streamlit as st
-from planner import create_plan
+from database import save_profile
+from planner import plan_for_profile
 
 
 def saved_option(label, options, saved_value):
@@ -172,7 +173,7 @@ def show_profile():
 
         else:
 
-            st.session_state.profile = {
+            profile = {
                 "name": name,
                 "age": age,
                 "height": height,
@@ -190,20 +191,10 @@ def show_profile():
                 "wake_time": wake_time
             }
 
-            st.session_state.plan = create_plan(
-                age=age,
-                gender=gender,
-                activity=activity,
-                experience=experience,
-                goal=goal,
-                workout_location=workout_location,
-                workout_time=workout_time,
-                preferred_time=preferred_time,
-                diet=diet,
-                bedtime=bedtime,
-                wake_time=wake_time,
-                plan_days=plan_days
-            )
+            plan = plan_for_profile(profile)
+            save_profile(profile)
+            st.session_state.profile = profile
+            st.session_state.plan = plan
 
             st.session_state.profile_saved = True
 

@@ -1,178 +1,90 @@
+from datetime import date
+
 import streamlit as st
+
+from database import add_entry, get_entries, get_meals, remove_meal, save_meal
+
+
+MEALS = {
+    "Breakfast": [
+        ("Overnight oats with soy milk, berries, and nuts", {"vegan", "protein"}),
+        ("Greek yogurt with fruit and seeds", {"vegetarian", "protein"}),
+        ("Eggs with whole-grain toast and fruit", {"vegetarian", "protein"}),
+    ],
+    "Lunch": [
+        ("Lentil and quinoa bowl with roasted vegetables", {"vegan", "protein"}),
+        ("Grilled chicken and brown rice bowl", {"protein"}),
+        ("Tomato and mozzarella sandwich", {"vegetarian"}),
+    ],
+    "Dinner": [
+        ("Tofu and edamame stir-fry with rice", {"vegan", "protein"}),
+        ("Salmon with potatoes and greens", {"protein"}),
+        ("Chickpea and vegetable curry", {"vegan"}),
+    ],
+    "Snacks": [
+        ("Apple slices with peanut butter", {"vegan"}),
+        ("Roasted edamame", {"vegan", "protein"}),
+        ("Cottage cheese and berries", {"vegetarian", "protein"}),
+    ],
+}
 
 
 def show_food():
-
     st.title("Food & Nutrition")
-
-    st.write(
-        "Build healthy eating habits with balanced meals and room "
-        "for foods you enjoy."
-    )
-
-    # ==================================================
-    # FOOD PREFERENCE
-    # ==================================================
-
-    st.subheader("🥗 Your Food Preference")
-
+    diet = st.session_state.profile.get("diet", "No Restrictions")
     food_style = st.selectbox(
-        "Choose your nutrition style",
-        [
-            "Balanced & Healthy",
-            "Balanced + Flexible Choice Day"
-        ]
+        "Nutrition style", ("Balanced & Healthy", "Balanced + Flexible Choice Day")
     )
-
-    # ==================================================
-    # HEALTHY FOOD SUGGESTIONS
-    # ==================================================
-
-    st.subheader("🌱 Healthy Food Ideas")
-
-    healthy_foods = {
-        "🍳 Breakfast": [
-            "Eggs with whole-grain toast and fruit",
-            "Oatmeal with fruit and yogurt",
-            "Greek yogurt with berries and granola"
-        ],
-
-        "🥗 Lunch": [
-            "Grilled chicken with rice and vegetables",
-            "Turkey and vegetable whole-grain wrap",
-            "Bean and vegetable bowl with rice"
-        ],
-
-        "🍎 Snack": [
-            "Apple with peanut butter",
-            "Yogurt with fruit",
-            "Carrots with hummus",
-            "Nuts and fruit"
-        ],
-
-        "🍗 Dinner": [
-            "Chicken, potatoes, and vegetables",
-            "Salmon with rice and vegetables",
-            "Tofu and vegetable stir-fry with rice"
-        ]
-    }
-
-    for meal, foods in healthy_foods.items():
-
-        with st.expander(meal):
-
-            for food in foods:
-                st.write(f"• {food}")
-
-    # ==================================================
-    # FLEXIBLE CHOICE DAY
-    # ==================================================
+    st.subheader("Meal ideas")
+    st.caption(f"Diet preference: {diet}")
+    for category, suggestions in MEALS.items():
+        with st.expander(category):
+            for meal, tags in suggestions:
+                matches = {
+                    "Vegan": "vegan" in tags,
+                    "Vegetarian": bool(tags & {"vegan", "vegetarian"}),
+                    "High Protein": "protein" in tags,
+                }
+                if matches.get(diet, True):
+                    st.write(f"• {meal}")
 
     if food_style == "Balanced + Flexible Choice Day":
+        with st.expander("Flexible choice day"):
+            st.write("Include a meal you enjoy alongside your regular meals.")
+            st.text_input("What meal would you like to enjoy?")
 
-        st.subheader("🍕 Flexible Choice Day")
+    today = date.today()
+    st.subheader("Log a meal")
+    with st.form("meal_log", clear_on_submit=True):
+        meal = st.text_input("Food or meal")
+        quantity = st.number_input("Servings", min_value=1, value=1)
+        favorite = st.checkbox("Save to favorites")
+        if st.form_submit_button("Add food", type="primary"):
+            if not meal.strip():
+                st.warning("Enter a food or meal.")
+            else:
+                add_entry("food", today, meal.strip(), quantity)
+                if favorite:
+                    save_meal(meal.strip(), quantity)
+                st.success("Meal logged.")
 
-        st.info(
-            "Enjoy foods you like while keeping your overall eating "
-            "pattern balanced. One flexible day can include foods such "
-            "as pizza, burgers, fries, tacos, or other favorites."
-        )
+    favorites = get_meals()
+    if favorites:
+        st.subheader("Favorite meals")
+        for index, row in enumerate(favorites):
+            name, quantity = row["name"], row["quantity"]
+            label, log, remove = st.columns([3, 2, 2])
+            label.text(f"{name} · {quantity} servings")
+            if log.button("Log meal", key=f"log_meal_{index}"):
+                add_entry("food", today, name, quantity)
+                st.rerun()
+            if remove.button("Remove favorite", key=f"remove_meal_{index}"):
+                remove_meal(name)
+                st.rerun()
 
-        favorite_food = st.text_input(
-            "What's your favorite food?"
-        )
-
-        if favorite_food.strip():
-
-            st.success(
-                f"Today you can enjoy your favorite: {favorite_food} 😊"
-            )
-
-        st.write(
-            "Tip: Keep regular meals, include nutritious foods during "
-            "the day, and enjoy your favorite food without guilt."
-        )
-
-    # ==================================================
-    # WATER
-    # ==================================================
-
-    st.subheader("💧 Hydration")
-
-    st.write(
-        "Keep water available throughout the day and drink regularly, "
-        "especially when you are active."
-    )
-
-    # ==================================================
-    # ADD FOOD
-    # ==================================================
-
-    st.subheader("📝 Log Your Food")
-
-    food_name = st.text_input(
-        "Food or Meal"
-    )
-
-    quantity = st.number_input(
-        "Quantity",
-        min_value=1,
-        value=1
-    )
-
-    if st.button(
-        "➕ Add Food",
-        type="primary",
-        use_container_width=True
-    ):
-
-        if food_name.strip() == "":
-            st.warning(
-                "Please enter a food."
-            )
-
-        else:
-
-            st.session_state.food_entries.append(
-                {
-                    "food": food_name,
-                    "quantity": quantity
-                }
-            )
-
-            st.success(
-                f"Added {quantity} × {food_name}"
-            )
-
-    # ==================================================
-    # TODAY'S FOOD
-    # ==================================================
-
-    st.divider()
-
-    st.subheader("📋 Today's Food")
-
-    if len(st.session_state.food_entries) == 0:
-
-        st.info(
-            "No food entries yet."
-        )
-
-    else:
-
-        for entry in st.session_state.food_entries:
-
-            st.markdown(
-                f"""
-                <div class="dashboard-card">
-
-                    <h3>🍎 {entry['food']}</h3>
-
-                    <p>
-                        Quantity: {entry['quantity']}
-                    </p>
-
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+    st.subheader("Today's food")
+    entries = [row for row in get_entries(today, today) if row["kind"] == "food"]
+    if not entries:
+        st.info("No food entries yet.")
+    for row in entries:
+        st.text(f"{row['label']} · {row['amount']} servings")

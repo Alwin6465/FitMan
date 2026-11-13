@@ -29,12 +29,22 @@
 }
 .fitman-brand img { width: 42px; height: 42px; }
 .fitman-brand em { color: var(--fit-accent); font-style: normal; }
-[data-testid="stSidebar"] [role="radiogroup"] > label {
-    padding: .65rem .65rem;
-    border-radius: .65rem;
+.st-key-fitman_navigation [data-testid="stVerticalBlock"] { gap: .25rem; }
+.st-key-fitman_navigation .stButton > button {
+    justify-content: flex-start;
+    border: 1px solid transparent;
+    padding: .65rem .8rem;
+    background: transparent;
+    color: var(--fit-muted);
 }
-[data-testid="stSidebar"] [role="radiogroup"] > label:has(input:checked) {
-    background: #243629;
+.st-key-fitman_navigation .stButton > button:hover {
+    background: #1d2d24;
+    color: var(--fit-text);
+}
+.st-key-fitman_navigation .stButton > button[kind="primary"] {
+    background: #26392a;
+    color: var(--fit-accent);
+    border-color: #3e543f;
 }
 .fitman-hero {
     min-height: 330px;
